@@ -12,7 +12,7 @@ export default function AddTask({ onAdd, date, groupSuggestions = [] }) {
 		<div className="rounded-xl border border-zinc-800 p-4 flex flex-col gap-2 bg-zinc-950 w-full">
 			<div className="flex flex-col md:flex-row gap-2 w-full">
 				<input
-					placeholder="Task title"
+					placeholder="Task"
 					value={title}
 					onChange={(e) => setTitle(e.target.value)}
 					className="flex-1 min-w-[150px] rounded-md border border-zinc-700 bg-zinc-900 text-white px-3 py-2 text-base focus:outline-none focus:ring-2 ring-fuchsia-500"
