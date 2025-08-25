@@ -18,7 +18,7 @@ export default function AddTask({ onAdd, date, groupSuggestions = [] }) {
 					className="flex-1 min-w-[150px] rounded-md border border-zinc-700 bg-zinc-900 text-white px-3 py-2 text-base focus:outline-none focus:ring-2 ring-fuchsia-500"
 					/>
 				<input
-					placeholder="Subject (optional)"
+					placeholder="Subject"
 					value={group}
 					onChange={(e) => setGroup(e.target.value)}
 					list="group-suggestions"
