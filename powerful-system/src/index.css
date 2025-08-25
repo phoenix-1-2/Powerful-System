@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+	--bg: 0 0 0;
+	--fg: 236 236 236;
+	font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+html, body, #root {
+	height: 100%;
+}
+
+body {
+	@apply bg-[rgb(var(--bg))] text-[rgb(var(--fg))] m-0;
+}
