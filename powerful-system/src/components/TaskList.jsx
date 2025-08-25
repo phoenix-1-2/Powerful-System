@@ -12,7 +12,7 @@ export default function TaskList({ tasks, onToggle, onDelete }) {
 		acc[key].totalPoints += Number(t.points || 0);
 		return acc;
 	}, {});
-	const groups = Object.values(groupsMap).sort((a, b) => a.title.localeCompare(b.title));
+	const groups = Object.values(groupsMap);
 
 	const [expandedGroups, setExpandedGroups] = useState(() => {
 		const init = {};
