@@ -1,15 +1,15 @@
 [build]
-  # Directory where your source code lives (optional, default is root)
-  base = "/"
-  
-  # Command to build your app
   command = "npm run build"
-  
-  # Directory to deploy (where the build outputs)
-  publish = "build"
+  publish = "dist"
+  # Optional: set the directory of your project if not root
+  # base = "/"
 
-# Redirect all requests to index.html for SPA routing
+# Redirect all requests to index.html for SPA routing (React Router)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Optional: Environment variables
+#[[context.production.environment]]
+#  NODE_ENV = "production"
