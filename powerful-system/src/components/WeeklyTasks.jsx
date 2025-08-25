@@ -20,7 +20,7 @@ export default function WeeklyTasks({ selectedDateISO, tasks, onAdd, onToggle, o
 		)
 	).sort((a, b) => a.localeCompare(b));
 	return (
-		<div className="grid grid-cols-2 gap-4 place-items-center">
+		<div className="grid grid-cols-1 md:grid-cols-2 gap-4 place-items-center">
 			{days.map((dayISO) => {
 				const dayTasks = tasks.filter((t) => t.date === dayISO);
 				const label = new Date(dayISO).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
