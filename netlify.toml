@@ -1,12 +1,15 @@
 [build]
-  base = "powerful-system"
-  command = "npm ci && npm run build"
-  publish = "powerful-system/dist"
+  # Directory where your source code lives (optional, default is root)
+  base = "/"
+  
+  # Command to build your app
+  command = "npm run build"
+  
+  # Directory to deploy (where the build outputs)
+  publish = "build"
 
-[build.environment]
-  NODE_VERSION = "20.19.0"
-
+# Redirect all requests to index.html for SPA routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 
+  status = 200
