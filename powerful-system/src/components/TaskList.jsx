@@ -92,12 +92,13 @@ export default function TaskList({ tasks, onToggle, onDelete }) {
                         </div>
                       </label>
                       <motion.button
-                        whileHover={{ scale: 1.06 }}
-                        className="text-xs text-zinc-400 hover:text-rose-500"
+                        whileHover={{ scale: 1.15 }}
+                        className="flex items-center gap-1 text-xs text-zinc-400 hover:text-rose-500"
                         onClick={() => onDelete(t.id)}
                         aria-label={`Delete ${t.title}`}
                       >
-                        <Trash2 size={14} /> Delete
+                        <Trash2 size={16} />
+                        <span>Delete</span>
                       </motion.button>
                     </motion.div>
                   ))}
