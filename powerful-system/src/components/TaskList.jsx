@@ -31,7 +31,7 @@ export default function TaskList({ tasks, onToggle, onDelete }) {
         </div>
       ) : (
         groups.map((g, gi) => {
-          const isOpen = expandedGroups[g.key] ?? true;
+          const isOpen = expandedGroups[g.key] ?? false;
           return (
             <div
               key={g.key}
