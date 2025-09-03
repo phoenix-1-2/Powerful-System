@@ -4,7 +4,6 @@ function remarkFor(totalPointsRatio) {
   if (totalPointsRatio > 0.99) return "Incredible week 👏";
   if (totalPointsRatio > 0.79) return "Stellar progress ✨";
   if (totalPointsRatio > 0.49) return "Great going 👍";
-  if (totalPointsRatio === 0) return "";
   return "Tear apart next week 🔥";
 }
 
