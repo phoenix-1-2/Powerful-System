@@ -36,17 +36,20 @@ export default function MonthlyTable({ monthlyTotals, dailyTarget = 100 }) {
               <td className="p-3 font-medium">{monthLabelFromKey(m)}</td>
               <td className="p-3">
                 <div className="flex flex-col gap-2">
-                  {Object.entries(monthlyTotals[m].weeks).map(([wk, total]) => (
-                    <div
-                      key={wk}
-                      className="flex items-center justify-between gap-3"
-                    >
-                      <span className="px-2 py-1 rounded-full bg-zinc-800 text-zinc-100 border border-zinc-700">
-                        {formatWeekRangeFromKey(wk)}
-                      </span>
-                      <span className="text-zinc-300">{total} points</span>
-                    </div>
-                  ))}
+                  {Object.entries(monthlyTotals[m].weeks).map(
+                    ([wk, total]) =>
+                      total > 0 && (
+                        <div
+                          key={wk}
+                          className="flex items-center justify-between gap-3"
+                        >
+                          <span className="px-2 py-1 rounded-full bg-zinc-800 text-zinc-100 border border-zinc-700">
+                            {formatWeekRangeFromKey(wk)}
+                          </span>
+                          <span className="text-zinc-300">{total} points</span>
+                        </div>
+                      ),
+                  )}
                 </div>
               </td>
               <td className="p-3 text-right font-semibold">
