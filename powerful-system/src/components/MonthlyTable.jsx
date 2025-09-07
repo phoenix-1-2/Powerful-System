@@ -58,7 +58,9 @@ export default function MonthlyTable({ monthlyTotals, dailyTarget = 100 }) {
                   const latestTotal = weekEntries.sort().slice(-1)[0][1];
                   const denom = Math.max(1, dailyTarget * 7);
                   const ratio = latestTotal / denom;
-                  return ratio * 100 + "% | " + remarkFor(ratio);
+                  return `${parseFloat(
+                    (ratio * 100).toPrecision(2),
+                  )}% | ${remarkFor(ratio)}`;
                 })()}
               </td>
             </tr>
