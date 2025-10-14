@@ -6,7 +6,7 @@ import ProgressBar from './components/ProgressBar.jsx';
 import WeeklyViz from './components/WeeklyViz.jsx';
 import MonthlyTable from './components/MonthlyTable.jsx';
 import WeeklyTasks from './components/WeeklyTasks.jsx';
-import { defaultState, loadState, saveState, loadStateIDB, saveStateIDB } from './utils/store.js';
+import { defaultState, loadState, saveState } from './utils/store.js';
 import { todayISO, weekKeyFromDate, monthKeyFromDate, formatWeekRangeFromKey, startOfISOWeekFromKey } from './utils/date.js';
 import './index.css';
 
@@ -22,37 +22,38 @@ function weeklyRemark(ratio) {
 }
 
 export default function App() {
-	const initialState = () => {
-		const ls = loadState();
-		if (ls) return ls;
-		if (DEV_SEED) {
-			const sampleTasks = [
-				{ id: 't1', title: 'Morning workout', points: 30, completed: true, date: todayISO() },
-				{ id: 't2', title: 'Read 20 pages', points: 20, completed: false, date: todayISO() },
-				{ id: 't3', title: 'Code kata', points: 50, completed: true, date: todayISO() },
-			];
-			const wk = weekKeyFromDate(todayISO());
-			const mn = monthKeyFromDate(todayISO());
-			const monthlyTotals = { [mn]: { total: 100, weeks: { [wk]: 100 } } };
-			return { ...defaultState(), tasks: sampleTasks, monthlyTotals };
-		}
-		return defaultState();
-	};
+	const [state, setState] = useState(defaultState());
+	const [loading, setLoading] = useState(true);
+	const [selectedDate, setSelectedDate] = useState(todayISO());
 
-	const [state, setState] = useState(() => initialState());
+	// ✅ Load from Firebase once
 	useEffect(() => {
 		let mounted = true;
 		(async () => {
-			const idb = await loadStateIDB();
-			if (mounted && idb) setState(idb);
+			try {
+				const firebaseState = await loadState(); // load from Firestore
+				if (mounted && firebaseState) {
+					setState(firebaseState);
+				}
+			} catch (e) {
+				console.error('Failed to load from Firebase:', e);
+			} finally {
+				if (mounted) setLoading(false);
+			}
 		})();
-		return () => { mounted = false; };
+		return () => {
+			mounted = false;
+		};
 	}, []);
+
+	// ✅ Auto-save to Firebase (debounced)
 	useEffect(() => {
-		saveState(state);
-		saveStateIDB(state);
-	}, [state]);
-	const [selectedDate, setSelectedDate] = useState(todayISO());
+		if (loading) return;
+		const timeout = setTimeout(() => {
+			saveState(state); // save to Firestore
+		}, 600);
+		return () => clearTimeout(timeout);
+	}, [state, loading]);
 
 	const weekTotalsByDay = useMemo(() => {
 		const totals = {};
@@ -75,17 +76,37 @@ export default function App() {
 			...s,
 			tasks: [
 				...s.tasks,
-				{ id: (crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), title, points, completed: false, date, group },
+				{
+					id: crypto?.randomUUID?.() ?? String(Date.now()),
+					title,
+					points,
+					completed: false,
+					date,
+					group,
+				},
 			],
 		}));
 	};
+
 	const toggleTask = (id) => {
-		setState((s) => ({ ...s, tasks: s.tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)) }));
+		setState((s) => ({
+			...s,
+			tasks: s.tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
+		}));
 	};
+
 	const deleteTask = (id) => {
-		setState((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) }));
+		setState((s) => ({
+			...s,
+			tasks: s.tasks.filter((t) => t.id !== id),
+		}));
 	};
-	const setDailyPoints = (val) => setState((s) => ({ ...s, dailyPoints: val }));
+
+	const setDailyPoints = (val) =>
+		setState((s) => ({
+			...s,
+			dailyPoints: val,
+		}));
 
 	function logCurrentWeekToMonthly() {
 		const wk = weekKeyFromDate(selectedDate);
@@ -99,8 +120,14 @@ export default function App() {
 			const currentMonth = s.monthlyTotals[mn] || { total: 0, weeks: {} };
 			if (currentMonth.weeks[wk] === total) return s;
 			const nextWeeks = { ...currentMonth.weeks, [wk]: total };
-			const nextMonth = { total: Object.values(nextWeeks).reduce((a, b) => a + b, 0), weeks: nextWeeks };
-			return { ...s, monthlyTotals: { ...s.monthlyTotals, [mn]: nextMonth } };
+			const nextMonth = {
+				total: Object.values(nextWeeks).reduce((a, b) => a + b, 0),
+				weeks: nextWeeks,
+			};
+			return {
+				...s,
+				monthlyTotals: { ...s.monthlyTotals, [mn]: nextMonth },
+			};
 		});
 	}
 
@@ -124,6 +151,14 @@ export default function App() {
 		}
 	}, [state]);
 
+	if (loading) {
+		return (
+			<div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+				<p>Loading your data from Firebase...</p>
+			</div>
+		);
+	}
+
 	return (
 		<div className="min-h-screen bg-zinc-950 text-zinc-100 p-4 md:p-8 overflow-x-hidden">
 			<div className="mx-auto max-w-7xl flex flex-col gap-6">
@@ -131,15 +166,47 @@ export default function App() {
 
 				<div className="flex flex-wrap items-center gap-3">
 					<label className="text-sm text-zinc-300">Week</label>
-					<div className="text-sm text-zinc-400 min-w-0 truncate">{formatWeekRangeFromKey(weekKeyFromDate(selectedDate))}</div>
-					<button onClick={() => changeWeek(-1)} className={`text-sm px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition-colors ${selectedWeekStart < currentWeekStart ? 'ring-2 ring-fuchsia-500' : ''}`}>Prev</button>
-					<button onClick={() => setSelectedDate(todayISO())} className={`text-sm px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition-colors ${selectedWeekStart === currentWeekStart ? 'bg-fuchsia-600 text-white border-fuchsia-600' : ''}`}>This Week</button>
-					<button onClick={() => changeWeek(1)} className={`text-sm px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition-colors ${selectedWeekStart > currentWeekStart ? 'ring-2 ring-fuchsia-500' : ''}`}>Next</button>
+					<div className="text-sm text-zinc-400 min-w-0 truncate">
+						{formatWeekRangeFromKey(weekKeyFromDate(selectedDate))}
+					</div>
+					<button
+						onClick={() => changeWeek(-1)}
+						className={`text-sm px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition-colors ${
+							selectedWeekStart < currentWeekStart ? 'ring-2 ring-fuchsia-500' : ''
+						}`}
+					>
+						Prev
+					</button>
+					<button
+						onClick={() => setSelectedDate(todayISO())}
+						className={`text-sm px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition-colors ${
+							selectedWeekStart === currentWeekStart
+								? 'bg-fuchsia-600 text-white border-fuchsia-600'
+								: ''
+						}`}
+					>
+						This Week
+					</button>
+					<button
+						onClick={() => changeWeek(1)}
+						className={`text-sm px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition-colors ${
+							selectedWeekStart > currentWeekStart ? 'ring-2 ring-fuchsia-500' : ''
+						}`}
+					>
+						Next
+					</button>
 				</div>
 
 				<div className="grid grid-cols-1 lg:grid-cols-1 gap-12">
 					<div className="lg:col-span-2 flex flex-col gap-12 items-center">
-						<WeeklyTasks selectedDateISO={selectedDate} tasks={state.tasks} onAdd={addTask} onToggle={toggleTask} onDelete={deleteTask} dailyTarget={state.dailyPoints} />
+						<WeeklyTasks
+							selectedDateISO={selectedDate}
+							tasks={state.tasks}
+							onAdd={addTask}
+							onToggle={toggleTask}
+							onDelete={deleteTask}
+							dailyTarget={state.dailyPoints}
+						/>
 					</div>
 				</div>
 
@@ -152,13 +219,25 @@ export default function App() {
 
 				<div className="rounded-xl border border-zinc-800 p-4 bg-zinc-950">
 					<h3 className="font-semibold mb-2">Weekly Summary</h3>
-					<WeeklyViz weekTotalsByDay={weekTotalsByDay} weeklyTotal={weeklyTotal} dailyTarget={state.dailyPoints} />
-					<div className="text-xs text-zinc-400 mt-2">{weeklyRemark(weeklyTotal / Math.max(1, state.dailyPoints * 7))}</div>
+					<WeeklyViz
+						weekTotalsByDay={weekTotalsByDay}
+						weeklyTotal={weeklyTotal}
+						dailyTarget={state.dailyPoints}
+					/>
+					<div className="text-xs text-zinc-400 mt-2">
+						{weeklyRemark(weeklyTotal / Math.max(1, state.dailyPoints * 7))}
+					</div>
 				</div>
-				<button onClick={logCurrentWeekToMonthly} className="px-3 py-2 rounded-md bg-gradient-to-r from-fuchsia-600 via-pink-500 to-rose-500 text-white text-sm hover:opacity-90 transition">Log current week</button>
+
+				<button
+					onClick={logCurrentWeekToMonthly}
+					className="px-3 py-2 rounded-md bg-gradient-to-r from-fuchsia-600 via-pink-500 to-rose-500 text-white text-sm hover:opacity-90 transition"
+				>
+					Log current week
+				</button>
 
 				<div className="text-xs text-zinc-500 text-center py-6">
-					Data stored locally. Add Firebase/Mongo for multi-device sync.
+					Data synced with Firebase Firestore ⚡
 				</div>
 			</div>
 		</div>
